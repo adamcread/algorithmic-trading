@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from datetime import datetime
+from datetime import date
 from scipy.stats import linregress
 from pypfopt.efficient_frontier import EfficientFrontier
 from pypfopt import risk_models, expected_returns
@@ -66,7 +66,7 @@ def trading_bot(event, context):
     allocation, unallocated = da.lp_portfolio()
 
     # create df to store info about purchased
-    pf = {'Date': today, 'Value': pf_value, 'Unallocated': unallocated}
+    pf = {'Date': date.today().strftime("%Y-%m-%d"), 'Value': pf_value, 'Unallocated': unallocated}
     for stock_ind in range(pf_size):
         pf['stock{}'.format(stock_ind)] = bests[stock_ind]
         pf['stock{}Bought'.format(stock_ind)] = allocation.get(bests[stock_ind], 0)
