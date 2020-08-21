@@ -1,6 +1,6 @@
 import requests
 import pandas as pd
-from datetime import datetime
+import numpy as np
 from bs4 import BeautifulSoup
 
 def daily_stock_data(event, context):
@@ -19,12 +19,17 @@ def daily_stock_data(event, context):
         historical_soup = BeautifulSoup(historical_page.content, 'html.parser')
         historical_table = historical_soup.find('table', {'data-test': 'historical-prices'}).find('tbody')
 
-        # store close data for stocks
-        symb_historical = pd.Series([tr.find_all('span')[4].text.replace(',', '') for tr in historical_table.find_all('tr')])
 
-        # convert data to numerical and store in df
-        symb_historical = symb_historical.apply(pd.to_numeric, errors='coerce')
-        historical_data[symb] = symb_historical.dropna()[::-1].reset_index(drop=True)
+        # store close data for stocks
+        symb_historical = []
+        for tr in historical_table.find_all('tr'):
+            # if dividend row there will be an error so instead add null data
+            spans = tr.find_all('span')
+            symb_historical.append(float(spans[4].text.replace(',', '')) if len(spans)>=4 else np.nan)
+
+        # remove null datapoints and reverse data order so it is oldest to newest
+        # effectively moving null points to bottom row
+        historical_data[symb] = pd.Series(symb_historical).dropna()[::-1].reset_index(drop=True)
 
     # upload historical nasdaq info to gbq
     historical_data.reset_index().to_gbq(destination_table='algorithmic_trader.daily_stock_data', 
